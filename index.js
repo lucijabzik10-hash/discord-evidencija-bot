@@ -6,7 +6,6 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  StringSelectMenuBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -18,33 +17,27 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-const sessions = new Map();
-
-const proizvodi = [
-  { id: "piletina", name: "Piletina", emoji: "🐔" },
-  { id: "jaje", name: "Jaje", emoji: "🥚" },
-  { id: "govedje_meso", name: "Goveđe meso", emoji: "🥩" },
-  { id: "kravlje_mleko", name: "Kravlje mleko", emoji: "🥛" },
-  { id: "seme_konja", name: "Seme konja", emoji: "🐴" },
-  { id: "dlake_grive", name: "Dlake grive", emoji: "🐎" },
-  { id: "svinjska_mast", name: "Svinjska mast", emoji: "🐷" },
-  { id: "svinjsko_meso", name: "Svinjsko meso", emoji: "🍖" },
-  { id: "kozje_mleko", name: "Kozje mleko", emoji: "🐐" },
-  { id: "jarece_meso", name: "Jareće meso", emoji: "🥩" },
-  { id: "djubrivo", name: "Đubrivo", emoji: "💩" }
-];
-
 function mainEmbed() {
   return new EmbedBuilder()
     .setTitle("📦 Evidencija proizvoda")
     .setDescription(
-      proizvodi.map(p => `${p.emoji} **${p.name}**`).join("\n") +
-      "\n\nKlikni **EVIDENTIRAJ** za unos količina."
+      "🐔 **Piletina**\n" +
+      "🥚 **Jaje**\n" +
+      "🥩 **Goveđe meso**\n" +
+      "🥛 **Kravlje mleko**\n" +
+      "🐴 **Seme konja**\n" +
+      "🐎 **Dlake grive**\n" +
+      "🐷 **Svinjska mast**\n" +
+      "🍖 **Svinjsko meso**\n" +
+      "🐐 **Kozje mleko**\n" +
+      "🥩 **Jareće meso**\n" +
+      "💩 **Đubrivo**\n\n" +
+      "Klikni **EVIDENTIRAJ** i upiši količine redom."
     )
     .setColor(0x00ff00);
 }
 
-function startButton() {
+function button() {
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("evidentiraj")
@@ -52,57 +45,6 @@ function startButton() {
       .setEmoji("✅")
       .setStyle(ButtonStyle.Success)
   );
-}
-
-function productMenu() {
-  return new ActionRowBuilder().addComponents(
-    new StringSelectMenuBuilder()
-      .setCustomId("odaberi_proizvod")
-      .setPlaceholder("Odaberi proizvod za unos količine")
-      .addOptions(
-        proizvodi.map(p => ({
-          label: p.name,
-          value: p.id,
-          emoji: p.emoji
-        }))
-      )
-  );
-}
-
-function finishButton() {
-  return new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId("zavrsi_evidenciju")
-      .setLabel("ZAVRŠI EVIDENCIJU")
-      .setEmoji("📋")
-      .setStyle(ButtonStyle.Primary)
-  );
-}
-
-function userStatusEmbed(userId) {
-  const data = sessions.get(userId) || {};
-
-  return new EmbedBuilder()
-    .setTitle("📝 Tvoja evidencija")
-    .setDescription(
-      proizvodi
-        .map(p => `${p.emoji} **${p.name}:** ${data[p.id] || "0"}`)
-        .join("\n")
-    )
-    .setColor(0xffcc00);
-}
-
-function finalLogEmbed(user, data) {
-  return new EmbedBuilder()
-    .setTitle("📋 Nova evidencija")
-    .setDescription(
-      `👤 **Igrač:** ${user}\n\n` +
-      proizvodi
-        .map(p => `${p.emoji} **${p.name}:** ${data[p.id] || "0"}`)
-        .join("\n")
-    )
-    .setColor(0x00ff00)
-    .setTimestamp();
 }
 
 client.once(Events.ClientReady, async () => {
@@ -113,7 +55,7 @@ client.once(Events.ClientReady, async () => {
 
     await channel.send({
       embeds: [mainEmbed()],
-      components: [startButton()]
+      components: [button()]
     });
   } catch (error) {
     console.error("Greška:", error.message);
@@ -122,71 +64,52 @@ client.once(Events.ClientReady, async () => {
 
 client.on(Events.InteractionCreate, async interaction => {
   if (interaction.isButton() && interaction.customId === "evidentiraj") {
-    sessions.set(interaction.user.id, {});
-
-    await interaction.reply({
-      embeds: [userStatusEmbed(interaction.user.id)],
-      components: [productMenu(), finishButton()],
-      ephemeral: true
-    });
-  }
-
-  if (interaction.isStringSelectMenu() && interaction.customId === "odaberi_proizvod") {
-    const productId = interaction.values[0];
-    const product = proizvodi.find(p => p.id === productId);
-
     const modal = new ModalBuilder()
-      .setCustomId(`unos_${product.id}`)
-      .setTitle(`Unos: ${product.name}`);
+      .setCustomId("forma_evidencija")
+      .setTitle("Evidencija proizvoda");
 
-    const input = new TextInputBuilder()
-      .setCustomId("kolicina")
-      .setLabel(`Količina za ${product.name}`)
-      .setStyle(TextInputStyle.Short)
-      .setPlaceholder("npr. 18")
+    const unos = new TextInputBuilder()
+      .setCustomId("unos")
+      .setLabel("Upiši sve količine redom")
+      .setStyle(TextInputStyle.Paragraph)
+      .setPlaceholder(
+        "Piletina: 18\n" +
+        "Jaje: 12\n" +
+        "Goveđe meso: 12\n" +
+        "Kravlje mleko: 12\n" +
+        "Seme konja: 18\n" +
+        "Dlake grive: 6\n" +
+        "Svinjska mast: 12\n" +
+        "Svinjsko meso: 12\n" +
+        "Kozje mleko: 12\n" +
+        "Jareće meso: 12\n" +
+        "Đubrivo: 13"
+      )
       .setRequired(true);
 
-    modal.addComponents(
-      new ActionRowBuilder().addComponents(input)
-    );
+    modal.addComponents(new ActionRowBuilder().addComponents(unos));
 
     await interaction.showModal(modal);
   }
 
-  if (interaction.isModalSubmit() && interaction.customId.startsWith("unos_")) {
-    const productId = interaction.customId.replace("unos_", "");
-    const kolicina = interaction.fields.getTextInputValue("kolicina");
+  if (interaction.isModalSubmit() && interaction.customId === "forma_evidencija") {
+    const unos = interaction.fields.getTextInputValue("unos");
 
-    const data = sessions.get(interaction.user.id) || {};
-    data[productId] = kolicina;
-    sessions.set(interaction.user.id, data);
-
-    await interaction.reply({
-      content: "Količina je spremljena.",
-      embeds: [userStatusEmbed(interaction.user.id)],
-      components: [productMenu(), finishButton()],
-      ephemeral: true
-    });
-  }
-
-  if (interaction.isButton() && interaction.customId === "zavrsi_evidenciju") {
-    const data = sessions.get(interaction.user.id) || {};
+    const logEmbed = new EmbedBuilder()
+      .setTitle("📋 Nova evidencija")
+      .setDescription(`👤 **Igrač:** ${interaction.user.tag}\n\n${unos}`)
+      .setColor(0x00ff00)
+      .setTimestamp();
 
     await interaction.reply({
-      content: "Evidencija je završena i logovana.",
+      content: "Evidencija je spremljena.",
       ephemeral: true
     });
 
     await interaction.channel.send({
-      embeds: [finalLogEmbed(interaction.user.tag, data)]
+      embeds: [logEmbed],
+      components: [button()]
     });
-
-    await interaction.channel.send({
-      embeds: [mainEmbed()],
-      components: [startButton()]
-    });
-
-    sessions.delete(interaction.user.id);
   }
 });
 
