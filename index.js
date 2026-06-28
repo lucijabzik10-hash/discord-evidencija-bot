@@ -31,12 +31,16 @@ const proizvodi = [
   { emoji: "💩", name: "Đubrivo" }
 ];
 
+function templateText() {
+  return proizvodi.map(p => `${p.emoji} ${p.name}: 0`).join("\n");
+}
+
 function mainEmbed() {
   return new EmbedBuilder()
     .setTitle("📦 Evidencija proizvoda")
     .setDescription(
       proizvodi.map(p => `${p.emoji} **${p.name}**`).join("\n") +
-      "\n\nKlikni **EVIDENTIRAJ** i upiši količine redom."
+      "\n\nKlikni **EVIDENTIRAJ** i u jednom prozoru samo izmijeni brojeve."
     )
     .setColor(0x00ff00);
 }
@@ -51,16 +55,33 @@ function button() {
   );
 }
 
+function ocistiLiniju(line) {
+  return line
+    .replace(/[🐔🥚🥩🥛🐴🐎🐷🍖🐐💩]/gu, "")
+    .trim();
+}
+
 function napraviLog(unos) {
-  const brojevi = unos
-    .split(/[,\n ]+/)
+  const lines = unos
+    .split("\n")
     .map(x => x.trim())
     .filter(Boolean);
 
   let tekst = "";
 
-  proizvodi.forEach((p, index) => {
-    tekst += `${p.emoji} **${p.name}:** ${brojevi[index] || "0"}\n`;
+  proizvodi.forEach(p => {
+    const found = lines.find(line =>
+      ocistiLiniju(line).toLowerCase().startsWith(p.name.toLowerCase())
+    );
+
+    let value = "0";
+
+    if (found) {
+      const parts = found.split(":");
+      if (parts[1]) value = parts[1].trim() || "0";
+    }
+
+    tekst += `${p.emoji} **${p.name}:** ${value}\n`;
   });
 
   return tekst;
@@ -89,9 +110,9 @@ client.on(Events.InteractionCreate, async interaction => {
 
     const unos = new TextInputBuilder()
       .setCustomId("unos")
-      .setLabel("Količine redom")
+      .setLabel("Izmijeni samo brojeve")
       .setStyle(TextInputStyle.Paragraph)
-      .setPlaceholder("18,12,12,12,18,6,12,12,12,12,13")
+      .setValue(templateText())
       .setRequired(true);
 
     modal.addComponents(new ActionRowBuilder().addComponents(unos));
