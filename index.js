@@ -17,22 +17,26 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
+const proizvodi = [
+  { emoji: "🐔", name: "Piletina" },
+  { emoji: "🥚", name: "Jaje" },
+  { emoji: "🥩", name: "Goveđe meso" },
+  { emoji: "🥛", name: "Kravlje mleko" },
+  { emoji: "🐴", name: "Seme konja" },
+  { emoji: "🐎", name: "Dlake grive" },
+  { emoji: "🐷", name: "Svinjska mast" },
+  { emoji: "🍖", name: "Svinjsko meso" },
+  { emoji: "🐐", name: "Kozje mleko" },
+  { emoji: "🥩", name: "Jareće meso" },
+  { emoji: "💩", name: "Đubrivo" }
+];
+
 function mainEmbed() {
   return new EmbedBuilder()
     .setTitle("📦 Evidencija proizvoda")
     .setDescription(
-      "🐔 **Piletina**\n" +
-      "🥚 **Jaje**\n" +
-      "🥩 **Goveđe meso**\n" +
-      "🥛 **Kravlje mleko**\n" +
-      "🐴 **Seme konja**\n" +
-      "🐎 **Dlake grive**\n" +
-      "🐷 **Svinjska mast**\n" +
-      "🍖 **Svinjsko meso**\n" +
-      "🐐 **Kozje mleko**\n" +
-      "🥩 **Jareće meso**\n" +
-      "💩 **Đubrivo**\n\n" +
-      "Klikni **EVIDENTIRAJ** i upiši količine redom."
+      proizvodi.map(p => `${p.emoji} **${p.name}**`).join("\n") +
+      "\n\nKlikni **EVIDENTIRAJ** i upiši količine redom."
     )
     .setColor(0x00ff00);
 }
@@ -47,6 +51,21 @@ function button() {
   );
 }
 
+function napraviLog(unos) {
+  const brojevi = unos
+    .split(/[,\n ]+/)
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  let tekst = "";
+
+  proizvodi.forEach((p, index) => {
+    tekst += `${p.emoji} **${p.name}:** ${brojevi[index] || "0"}\n`;
+  });
+
+  return tekst;
+}
+
 client.once(Events.ClientReady, async () => {
   console.log(`Bot online kao ${client.user.tag}`);
 
@@ -58,7 +77,7 @@ client.once(Events.ClientReady, async () => {
       components: [button()]
     });
   } catch (error) {
-    console.error("Greška:", error.message);
+    console.error("Greška kod slanja početne poruke:", error.message);
   }
 });
 
@@ -70,21 +89,9 @@ client.on(Events.InteractionCreate, async interaction => {
 
     const unos = new TextInputBuilder()
       .setCustomId("unos")
-      .setLabel("Upiši sve količine redom")
+      .setLabel("Količine redom")
       .setStyle(TextInputStyle.Paragraph)
-      .setPlaceholder(
-        "Piletina: 18\n" +
-        "Jaje: 12\n" +
-        "Goveđe meso: 12\n" +
-        "Kravlje mleko: 12\n" +
-        "Seme konja: 18\n" +
-        "Dlake grive: 6\n" +
-        "Svinjska mast: 12\n" +
-        "Svinjsko meso: 12\n" +
-        "Kozje mleko: 12\n" +
-        "Jareće meso: 12\n" +
-        "Đubrivo: 13"
-      )
+      .setPlaceholder("18,12,12,12,18,6,12,12,12,12,13")
       .setRequired(true);
 
     modal.addComponents(new ActionRowBuilder().addComponents(unos));
@@ -94,10 +101,11 @@ client.on(Events.InteractionCreate, async interaction => {
 
   if (interaction.isModalSubmit() && interaction.customId === "forma_evidencija") {
     const unos = interaction.fields.getTextInputValue("unos");
+    const logTekst = napraviLog(unos);
 
     const logEmbed = new EmbedBuilder()
       .setTitle("📋 Nova evidencija")
-      .setDescription(`👤 **Igrač:** ${interaction.user.tag}\n\n${unos}`)
+      .setDescription(`👤 **Igrač:** ${interaction.user.tag}\n\n${logTekst}`)
       .setColor(0x00ff00)
       .setTimestamp();
 
