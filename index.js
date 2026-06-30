@@ -28,6 +28,7 @@ const proizvodi = [
   { emoji: "🍖", name: "Svinjsko meso" },
   { emoji: "🐐", name: "Kozje mleko" },
   { emoji: "🥩", name: "Jareće meso" },
+  { emoji: "🐑", name: "Vuna" },
   { emoji: "💩", name: "Đubrivo" }
 ];
 
@@ -57,7 +58,7 @@ function button() {
 
 function ocistiLiniju(line) {
   return line
-    .replace(/[🐔🥚🥩🥛🐴🐎🐷🍖🐐💩]/gu, "")
+    .replace(/[🐔🥚🥩🥛🐴🐎🐷🍖🐐🐑💩]/gu, "")
     .trim();
 }
 
